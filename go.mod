@@ -1,4 +1,4 @@
-module github.com/incu6us/goimports-reviser/v2
+module go.xrstf.de/go-imports-sorter
 
 go 1.13
 
