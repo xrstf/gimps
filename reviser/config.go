@@ -1,9 +1,9 @@
 package reviser
 
 import (
-	"path/filepath"
 	"strings"
 
+	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/incu6us/goimports-reviser/v2/pkg/std"
 )
 
@@ -60,7 +60,7 @@ func (c *Config) classifyImport(imprt string) string {
 
 	for _, set := range c.Sets {
 		for _, pattern := range set.Patterns {
-			if matches, _ := filepath.Match(pattern, pkgWithoutAlias); matches {
+			if matches, _ := doublestar.Match(pattern, pkgWithoutAlias); matches {
 				return set.Name
 			}
 		}
