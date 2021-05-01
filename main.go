@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/incu6us/goimports-reviser/v2/pkg/module"
-	"github.com/incu6us/goimports-reviser/v2/reviser"
+
+	"go.xrstf.de/go-imports-sorter/reviser"
 )
 
 // Project build specific vars

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/incu6us/goimports-reviser/v2/reviser"
+	"go.xrstf.de/go-imports-sorter/reviser"
 	"gopkg.in/yaml.v3"
 )
 
