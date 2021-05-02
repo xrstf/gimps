@@ -1,16 +1,16 @@
 env:
   - GO111MODULE=on
   - CGO_ENABLED=0
-  - PROJECT_NAME=go-imports-sorter
-  - PROJECT_USER=incu6us
+  - PROJECT_NAME=gimps
+  - PROJECT_USER=xrstf
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - id: go-imports-sorter-amd64
-    binary: go-imports-sorter
+  - id: gimps-amd64
+    binary: gimps
     goos:
       - linux
     goarch:
@@ -18,8 +18,8 @@ builds:
     ldflags:
       - -s -w -X "main.Tag={{ .Tag }}" -X "main.Commit={{ .FullCommit }}" -X "main.SourceURL={{ .GitURL }}" -X "main.GoVersion={{ .Env.GO_VERSION }}"
 
-  - id: go-imports-sorter-darwin-amd64
-    binary: go-imports-sorter
+  - id: gimps-darwin-amd64
+    binary: gimps
     goos:
       - darwin
     goarch:
@@ -27,8 +27,8 @@ builds:
     ldflags:
       - -s -w -X "main.Tag={{ .Tag }}" -X "main.Commit={{ .FullCommit }}" -X "main.SourceURL={{ .GitURL }}" -X "main.GoVersion={{ .Env.GO_VERSION }}"
 
-  - id: go-imports-sorter-windows-amd64
-    binary: go-imports-sorter
+  - id: gimps-windows-amd64
+    binary: gimps
     goos:
       - windows
     goarch:
@@ -52,37 +52,5 @@ changelog:
 release:
   prerelease: auto
   github:
-    owner: incu6us
-    name: go-imports-sorter
-
-brews:
-  - name: go-imports-sorter
-    tap:
-      owner: incu6us
-      name: homebrew-tap
-    url_template: "https://github.com/{{ .Env.PROJECT_USER }}/{{ .ProjectName }}/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    commit_author:
-      name: incu6us
-      email: vyacheslavpryimak@gmail.com
-    folder: Formula
-    homepage: "https://github.com/incu6us/go-imports-sorter"
-    description: "Right imports sorting & code formatting tool"
-    test: |
-      system "#{bin}/go-imports-sorter -version"
-    install: |
-      bin.install "go-imports-sorter"
-
-snapcrafts:
-  - id: go-imports-sorter
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      amd64: 64-bit
-      386: 32-bit
-      darwin: MacOS
-    publish: true
-    summary: "Right imports sorting & code formatting tool"
-    description: |
-      Tool for Golang to sort goimports by 3 groups: std, general and project dependencies. Also, formatting for your code will be prepared(so, you don't need to use gofmt or goimports separately).
-    grade: stable
-    confinement: strict
-    license: MIT
+    owner: xrstf
+    name: gimps
