@@ -13,7 +13,6 @@ type Config struct {
 	Sets                []Set    `yaml:"sets"`
 	RemoveUnusedImports *bool    `yaml:"removeUnusedImports"`
 	SetVersionAlias     *bool    `yaml:"setVersionAlias"`
-	FormattedOutput     *bool    `yaml:"formattedOutput"`
 }
 
 type Set struct {
@@ -23,15 +22,10 @@ type Set struct {
 
 func setDefaults(c *Config) {
 	// set polite defaults
-	yesPlease := true
 	noThanks := false
 
 	if c.RemoveUnusedImports == nil {
 		c.RemoveUnusedImports = &noThanks // yes is buggy
-	}
-
-	if c.FormattedOutput == nil {
-		c.FormattedOutput = &yesPlease
 	}
 
 	if c.SetVersionAlias == nil {

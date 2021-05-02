@@ -97,6 +97,8 @@ func main() {
 			if stdout {
 				fmt.Print(string(formattedOutput))
 			} else if hasChange {
+				log.Printf("Fixing %s", filename)
+
 				if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {
 					log.Fatalf("failed to write fixed result to file(%s): %v", filename, err)
 				}

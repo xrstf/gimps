@@ -16,57 +16,6 @@ import (
 	"github.com/incu6us/goimports-reviser/v2/pkg/astutil"
 )
 
-const (
-	stringValueSeparator = ","
-)
-
-// Option is an int alias for options
-type Option int
-
-const (
-	// OptionRemoveUnusedImports is an option to remove unused imports
-	OptionRemoveUnusedImports Option = iota + 1
-
-	// OptionUseAliasForVersionSuffix is an option to set explicit package name in imports
-	OptionUseAliasForVersionSuffix
-
-	// OptionFormat use to format the code
-	OptionFormat
-)
-
-// Options is a slice of executing options
-type Options []Option
-
-func (o Options) shouldRemoveUnusedImports() bool {
-	for _, option := range o {
-		if option == OptionRemoveUnusedImports {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (o Options) shouldUseAliasForVersionSuffix() bool {
-	for _, option := range o {
-		if option == OptionUseAliasForVersionSuffix {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (o Options) shouldFormat() bool {
-	for _, option := range o {
-		if option == OptionFormat {
-			return true
-		}
-	}
-
-	return false
-}
-
 // Execute is for revise imports and format the code
 func Execute(config *Config, filePath string) ([]byte, bool, error) {
 	setDefaults(config)
@@ -114,10 +63,6 @@ func Execute(config *Config, filePath string) ([]byte, bool, error) {
 }
 
 func formatDecls(config *Config, f *ast.File) {
-	if !*config.FormattedOutput {
-		return
-	}
-
 	for _, decl := range f.Decls {
 		if dd, ok := decl.(*ast.FuncDecl); ok {
 			var formattedComments []*ast.Comment
@@ -165,23 +110,6 @@ func groupImports(
 			sort.Strings(set)
 			result = append(result, set)
 		}
-	}
-
-	return result
-}
-
-func commaValueToSlice(s string) []string {
-	values := strings.Split(s, stringValueSeparator)
-	result := make([]string, 0, len(values))
-
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-
-		if value == "" {
-			continue
-		}
-
-		result = append(result, value)
 	}
 
 	return result
