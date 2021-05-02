@@ -7,14 +7,14 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"go.xrstf.de/gimps/reviser"
+	"go.xrstf.de/gimps/pkg/gimps"
 )
 
 const (
 	defaultConfigFile = ".gimps.yaml"
 )
 
-func loadConfiguration(filename string, moduleRoot string) (*reviser.Config, error) {
+func loadConfiguration(filename string, moduleRoot string) (*gimps.Config, error) {
 	// user did not specify a config file
 	if filename == "" {
 		if moduleRoot == "" {
@@ -30,7 +30,7 @@ func loadConfiguration(filename string, moduleRoot string) (*reviser.Config, err
 	}
 	defer f.Close()
 
-	c := &reviser.Config{}
+	c := &gimps.Config{}
 	if err := yaml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
 	}

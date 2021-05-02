@@ -1,4 +1,4 @@
-package reviser
+package gimps
 
 import (
 	"io/ioutil"

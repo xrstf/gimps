@@ -14,7 +14,7 @@ import (
 
 	"github.com/incu6us/goimports-reviser/v2/pkg/module"
 
-	"go.xrstf.de/gimps/reviser"
+	"go.xrstf.de/gimps/pkg/gimps"
 )
 
 // Project build specific vars
@@ -89,7 +89,7 @@ func main() {
 		}
 
 		for _, filename := range filenames {
-			formattedOutput, hasChange, err := reviser.Execute(config, filename)
+			formattedOutput, hasChange, err := gimps.Execute(config, filename)
 			if err != nil {
 				log.Fatalf("Failed to process %q: %v", filename, err)
 			}
