@@ -14,7 +14,12 @@ const (
 	defaultConfigFile = ".gimps.yaml"
 )
 
-func loadConfiguration(filename string, moduleRoot string) (*gimps.Config, error) {
+type Config struct {
+	gimps.Config `yaml:",inline"`
+	Exclude      []string `yaml:"exclude"`
+}
+
+func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 	// user did not specify a config file
 	if filename == "" {
 		if moduleRoot == "" {
@@ -30,9 +35,28 @@ func loadConfiguration(filename string, moduleRoot string) (*gimps.Config, error
 	}
 	defer f.Close()
 
-	c := &gimps.Config{}
+	c := &Config{}
 	if err := yaml.NewDecoder(f).Decode(c); err != nil {
 		return nil, err
+	}
+
+	if c.Exclude == nil || len(c.Exclude) == 0 {
+		// vendor is because we never want to modify vendor, the
+		// others are just to save time while scanning bigger
+		// repositories that maybe also contain non-Go stuff
+		c.Exclude = []string{
+			// to not break 3rd party code
+			"vendor/**",
+
+			// to not muck with generated files
+			"**/zz_generated.**",
+			"**/zz_generated_**",
+
+			// for performance
+			".git/**",
+			"_build/**",
+			"node_modules/**",
+		}
 	}
 
 	return c, nil

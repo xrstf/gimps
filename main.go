@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/incu6us/goimports-reviser/v2/pkg/module"
 
 	"go.xrstf.de/gimps/pkg/gimps"
@@ -83,13 +84,13 @@ func main() {
 	}
 
 	for _, input := range inputs {
-		filenames, err := listFiles(input, modRoot)
+		filenames, err := listFiles(input, modRoot, config.Exclude)
 		if err != nil {
 			log.Fatalf("Failed to list files in %q: %v", input, err)
 		}
 
 		for _, filename := range filenames {
-			formattedOutput, hasChange, err := gimps.Execute(config, filename)
+			formattedOutput, hasChange, err := gimps.Execute(&config.Config, filename)
 			if err != nil {
 				log.Fatalf("Failed to process %q: %v", filename, err)
 			}
@@ -97,10 +98,15 @@ func main() {
 			if stdout {
 				fmt.Print(string(formattedOutput))
 			} else if hasChange {
-				log.Printf("Fixing %s", filename)
+				relPath, err := filepath.Rel(modRoot, filename)
+				if err != nil {
+					log.Fatalf("This should never happen, could not determine relative path: %v", err)
+				}
+
+				log.Printf("Fixing %s", relPath)
 
 				if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {
-					log.Fatalf("failed to write fixed result to file(%s): %v", filename, err)
+					log.Fatalf("Failed to write fixed result to file %q: %v", filename, err)
 				}
 			}
 		}
@@ -140,21 +146,18 @@ func cleanupArgs(args []string) ([]string, error) {
 	return result, nil
 }
 
-func listFiles(start string, moduleRoot string) ([]string, error) {
+func listFiles(start string, moduleRoot string, skips []string) ([]string, error) {
 	result := []string{}
-	skipDirs := []string{
-		// we actually want to skip updating Go files in vendor/
-		filepath.Join(moduleRoot, "vendor"),
-
-		// skipping these is only for performance, so we don't needlessly list files
-		filepath.Join(moduleRoot, ".git"),
-		filepath.Join(moduleRoot, "node_modules"),
-	}
 
 	err := filepath.WalkDir(start, func(path string, d fs.DirEntry, err error) error {
+		relPath, err := filepath.Rel(moduleRoot, path)
+		if err != nil {
+			return err
+		}
+
 		if d.IsDir() {
-			for _, skip := range skipDirs {
-				if strings.HasPrefix(path, skip) {
+			for _, skip := range skips {
+				if match, _ := doublestar.Match(skip, relPath); match {
 					return filepath.SkipDir
 				}
 			}
