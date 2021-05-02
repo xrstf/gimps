@@ -4,10 +4,6 @@ env:
   - PROJECT_NAME=gimps
   - PROJECT_USER=xrstf
 
-before:
-  hooks:
-    - go mod download
-
 builds:
   - id: gimps-amd64
     binary: gimps
