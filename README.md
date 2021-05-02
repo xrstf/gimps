@@ -78,8 +78,8 @@ sets:
   - # a unique name
     name: kubermatic
     # a list of glob-expressions, with the addition that double star
-	 # expressions are allowed (`foo/**` matches `foo/bar/bar`)
-	 patterns:
+    # expressions are allowed (`foo/**` matches `foo/bar/bar`)
+    patterns:
       - 'k8c.io/**'
       - 'github.com/kubermatic/**'
   - name: kubernetes
