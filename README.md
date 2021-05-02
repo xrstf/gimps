@@ -36,6 +36,19 @@ Note that `std` and `external` are pre-defined by gimps and cannot be configured
 Then running `gimps -config configfile.yaml .` will automatically fix all Go files, except for
 the `vendor` folder and generated files.
 
+## Changes in this Fork
+
+- Output is always formatted, `-format` has been removed.
+- The notion of `local` packages with configurable prefixes has been removed,
+  configure a set instead. Usually the `project` set will be sufficient.
+- Configuration happens primarily via the config file `.gimps.yaml`.
+- Many files and directories can be specified as one; the main focus of gimps is not to be
+  a goimports/gopls alternative, but to be an addition and useful in CI environments.
+- `github.com/owner/repos-are-great` is not considered a local/project package of a
+  `github.com/owner/repo` module (stricter check for prefix).
+- gimps uses [goimports-reviser](https://github.com/incu6us/goimports-reviser)
+  code for the AST parsing, but large chunks of the `reviser` package have been rewritten.
+
 ## Installation
 
 ```
