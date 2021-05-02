@@ -15,8 +15,9 @@ const (
 )
 
 type Config struct {
-	gimps.Config `yaml:",inline"`
-	Exclude      []string `yaml:"exclude"`
+	gimps.Config         `yaml:",inline"`
+	Exclude              []string `yaml:"exclude"`
+	DetectGeneratedFiles *bool    `yaml:"detectGeneratedFiles"`
 }
 
 func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
@@ -57,6 +58,11 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 			"_build/**",
 			"node_modules/**",
 		}
+	}
+
+	if c.DetectGeneratedFiles == nil {
+		yesPlease := true
+		c.DetectGeneratedFiles = &yesPlease
 	}
 
 	return c, nil
