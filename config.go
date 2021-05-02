@@ -1,13 +1,29 @@
 package main
 
 import (
+	"errors"
 	"os"
+	"path/filepath"
 
-	"go.xrstf.de/go-imports-sorter/reviser"
 	"gopkg.in/yaml.v3"
+
+	"go.xrstf.de/gimps/reviser"
 )
 
-func loadConfiguration(filename string) (*reviser.Config, error) {
+const (
+	defaultConfigFile = ".gimps.yaml"
+)
+
+func loadConfiguration(filename string, moduleRoot string) (*reviser.Config, error) {
+	// user did not specify a config file
+	if filename == "" {
+		if moduleRoot == "" {
+			return nil, errors.New("no -config specified and could not automatically find go module root")
+		}
+
+		filename = filepath.Join(moduleRoot, defaultConfigFile)
+	}
+
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err

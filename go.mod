@@ -1,4 +1,4 @@
-module go.xrstf.de/go-imports-sorter
+module go.xrstf.de/gimps
 
 go 1.15
 
