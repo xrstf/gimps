@@ -52,6 +52,8 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 			// to not muck with generated files
 			"**/zz_generated.**",
 			"**/zz_generated_**",
+			"**/generated.pb.go",
+			"**/*_generated.go",
 
 			// for performance
 			".git/**",

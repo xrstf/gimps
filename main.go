@@ -168,13 +168,17 @@ func listFiles(start string, moduleRoot string, skips []string) ([]string, error
 			return err
 		}
 
-		if d.IsDir() {
-			for _, skip := range skips {
-				if match, _ := doublestar.Match(skip, relPath); match {
+		for _, skip := range skips {
+			if match, _ := doublestar.Match(skip, relPath); match {
+				if d.IsDir() {
 					return filepath.SkipDir
+				} else {
+					return nil
 				}
 			}
-		} else if strings.HasSuffix(path, ".go") {
+		}
+
+		if !d.IsDir() && strings.HasSuffix(path, ".go") {
 			result = append(result, path)
 		}
 
