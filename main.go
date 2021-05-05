@@ -36,11 +36,13 @@ func printVersion() {
 
 func main() {
 	configFile := ""
+	dryRun := false
 	showVersion := false
 	stdout := false
 
 	flag.StringVar(&configFile, "config", configFile, "Path to the config file (mandatory).")
 	flag.BoolVar(&stdout, "stdout", showVersion, "Print output to stdout instead of updating the source file(s).")
+	flag.BoolVar(&dryRun, "dry-run", dryRun, "Do not update files.")
 	flag.BoolVar(&showVersion, "version", stdout, "Show version and exit.")
 	flag.Parse()
 
@@ -50,7 +52,7 @@ func main() {
 	}
 
 	if flag.NArg() == 0 {
-		log.Fatal("Usage: gimps [-stdout] [-config=(autodetect)] FILE_OR_DIRECTORY[, ...]")
+		log.Fatal("Usage: gimps [-stdout] [-dry-run] [-config=(autodetect)] FILE_OR_DIRECTORY[, ...]")
 	}
 
 	inputs, err := cleanupArgs(flag.Args())
@@ -113,8 +115,10 @@ func main() {
 
 				log.Printf("Fixing %s", relPath)
 
-				if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {
-					log.Fatalf("Failed to write fixed result to file %q: %v", filename, err)
+				if !dryRun {
+					if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {
+						log.Fatalf("Failed to write fixed result to file %q: %v", filename, err)
+					}
 				}
 			}
 		}
