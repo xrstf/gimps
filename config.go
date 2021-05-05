@@ -14,6 +14,25 @@ const (
 	defaultConfigFile = ".gimps.yaml"
 )
 
+var (
+	defaultExcludes = []string{
+		// to not break 3rd party code
+		"vendor/**",
+
+		// to not muck with generated files
+		"**/zz_generated.**",
+		"**/zz_generated_**",
+		"**/generated.pb.go",
+		"**/generated.proto",
+		"**/*_generated.go",
+
+		// for performance
+		".git/**",
+		"_build/**",
+		"node_modules/**",
+	}
+)
+
 type Config struct {
 	gimps.Config         `yaml:",inline"`
 	Exclude              []string `yaml:"exclude"`
@@ -42,24 +61,7 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 	}
 
 	if c.Exclude == nil || len(c.Exclude) == 0 {
-		// vendor is because we never want to modify vendor, the
-		// others are just to save time while scanning bigger
-		// repositories that maybe also contain non-Go stuff
-		c.Exclude = []string{
-			// to not break 3rd party code
-			"vendor/**",
-
-			// to not muck with generated files
-			"**/zz_generated.**",
-			"**/zz_generated_**",
-			"**/generated.pb.go",
-			"**/*_generated.go",
-
-			// for performance
-			".git/**",
-			"_build/**",
-			"node_modules/**",
-		}
+		c.Exclude = defaultExcludes
 	}
 
 	if c.DetectGeneratedFiles == nil {
