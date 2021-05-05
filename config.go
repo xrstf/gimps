@@ -46,7 +46,15 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 			return nil, errors.New("no -config specified and could not automatically find go module root")
 		}
 
+		// try if there is a .gimps.yaml in the module root
 		filename = filepath.Join(moduleRoot, defaultConfigFile)
+
+		if _, err := os.Stat(filename); err != nil {
+			// file does not exist, so we just return the default config
+			return defaultConfig(&Config{}), nil
+		}
+
+		// file exists, continue loading as normal
 	}
 
 	f, err := os.Open(filename)
@@ -60,7 +68,11 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 		return nil, err
 	}
 
-	if c.Exclude == nil || len(c.Exclude) == 0 {
+	return defaultConfig(c), nil
+}
+
+func defaultConfig(c *Config) *Config {
+	if c.Exclude == nil {
 		c.Exclude = defaultExcludes
 	}
 
@@ -69,5 +81,5 @@ func loadConfiguration(filename string, moduleRoot string) (*Config, error) {
 		c.DetectGeneratedFiles = &yesPlease
 	}
 
-	return c, nil
+	return c
 }
