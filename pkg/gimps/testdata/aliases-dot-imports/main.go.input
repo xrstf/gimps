@@ -1,0 +1,19 @@
+package main
+
+import (
+	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/networking/v1beta1"
+	"log"
+)
+
+func main() {
+	Describe("test", func() {
+		fmt.Println(v1.ConfigMap{})
+		fmt.Println(v1beta1.HTTPIngressPath{})
+		log.Println("foo")
+		Expect(true).To(BeTrue())
+	})
+}

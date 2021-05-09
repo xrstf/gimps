@@ -154,6 +154,10 @@ func (a *Aliaser) RewriteFile(file *ast.File, filePath string, imports map[strin
 	values = map[string]string{}
 	for _, metadata := range imports {
 		effectiveName := metadata.Alias
+		if effectiveName == "." {
+			continue
+		}
+
 		if effectiveName == "" {
 			effectiveName, _ = a.deps.GetPackageName(filePath, buildTags, metadata.Package)
 		}

@@ -5,4 +5,4 @@ aliasRules:
   - name: b-to-a
     expr: 'log'
     alias: 'a'
-expectedExecuteError: 'failed to rewrite import aliases: two or more packages (at least "a" and "b") would be aliased to "a"'
+expectedExecuteError: 'failed to rewrite import aliases: two or more packages (at least "fmt" and "log") would be aliased to "a"'
