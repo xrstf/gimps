@@ -39,11 +39,9 @@ func TestIsProjectImport(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := &Config{
-				ProjectName: tt.projectName,
-			}
+			classifier := NewClassifier(tt.projectName, nil)
 
-			result := config.isProjectImport(tt.importPath)
+			result := classifier.IsProjectImport(tt.importPath)
 			if result != tt.expected {
 				t.Errorf("isProjectImport() returned %v, but wanted %v", result, tt.expected)
 			}

@@ -1,0 +1,8 @@
+aliasRules:
+  - name: a-to-b
+    expr: 'fmt'
+    alias: 'a'
+  - name: b-to-a
+    expr: 'log'
+    alias: 'a'
+expectedExecuteError: 'failed to rewrite import aliases: two or more packages (at least "a" and "b") would be aliased to "a"'

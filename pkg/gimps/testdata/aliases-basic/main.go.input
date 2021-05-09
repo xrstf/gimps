@@ -1,0 +1,14 @@
+package main
+
+import (
+	"fmt"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/networking/v1beta1"
+	"log"
+)
+
+func main() {
+	fmt.Println(v1.Config{})
+	fmt.Println(v1beta1.Config{})
+	log.Println("foo")
+}

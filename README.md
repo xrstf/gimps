@@ -41,6 +41,9 @@ the `vendor` folder and generated files.
 - Output is always formatted, `-format` has been removed.
 - The notion of `local` packages with configurable prefixes has been removed,
   configure a set instead. Usually the `project` set will be sufficient.
+- Likewise, the notion of "version aliases" was replaced with a flexible rule system,
+  allowing to configure dynamic aliases for matching packages and rewriting the code
+  accordingly (see below for important notes on this).
 - Configuration happens primarily via the config file `.gimps.yaml`.
 - Many files and directories can be specified as one; the main focus of gimps is not to be
   a goimports/gopls alternative, but to be an addition and useful in CI environments.
@@ -95,10 +98,46 @@ sets:
     patterns:
       - 'k8c.io/**'
       - 'github.com/kubermatic/**'
+
   - name: kubernetes
     patterns:
       - 'k8s.io/**'
       - '*.k8s.io/**'
+
+# gimps can enforce aliases for certain imports. For example, you can ensure
+# that all imports of "k8s.io/api/core/v1" are aliased as "corev1".
+# Rules are processed one at a time and the first matching is applied.
+#
+# There are a few important caveats to note:
+#
+#   * gimps only tokenizes source code and doesn't have deep knowledge of
+#     the semantics. If a package named "foo" is important and a local
+#     function call to `foo.DoSomething()` happens, gimps cannot determine
+#     whether "foo" here is the package or a local variable.
+#     To prevent accidental rewrites, ensure to never name a variable after
+#     any imported package (i.e. don't shadow the package name).
+#   * Rewriting aliases requires to load package dependencies for each
+#     package that is processed. This requires quite a bit of CPU and can
+#     can slow down gimps noticibly. If no rules are configured, gimps
+#     automatically skips loading package dependencies.
+aliasRules:
+  - # a unique name
+    name: k8s-api
+    # a Go regexp, ideally anchored (with ^ and $) to prevent mismatches,
+    # all packages that match will get an alias as configured below.
+    # The example below matches for example "k8s.io/api/core/v1"
+    expr: '^k8s.io/api/([a-z0-9-]+)/(v[a-z0-9-]+)$'
+    # the alias to use for the import; you will most likely always use
+    # references to groups in the expr ($1 gives the first matched group, etc.).
+    # Pay attention to not accidentically generate the same alias for
+    # multiple packages used in the same file (gimps will abort in this case).
+    # With the example package above, the configuration below yields "corev1".
+    alias: '$1$2'
+
+  - name: k8s-apimachinery
+    # contains an optional third subpackage, $4 will be empty if no subpackage was found
+    expr: '^k8s.io/apimachinery/pkg/apis/([a-z0-9-]+)/(v[a-z0-9-]+)(/([a-z0-9-]+))?$'
+    alias: '$1$2$4'
 
 # paths that match any of the following glob expressions (relative to the
 # go.mod) will be ignored; if nothing is configured, the following shows
@@ -145,6 +184,8 @@ For the editor integration, you can specify `-stdout` to print the formatted fil
 only makes sense if you provide exactly one file, otherwise separating the output is difficult.
 
 If you just want to see which files would be fixed, run with `-dry-run`.
+
+Give `-verbose` to show all files being processed instead of just fixed files.
 
 ```bash
 $ cd ~/myproject

@@ -9,15 +9,43 @@ import (
 	"go/printer"
 	"go/token"
 	"io/ioutil"
-	"path"
 	"sort"
 	"strings"
-
-	"github.com/incu6us/goimports-reviser/v2/pkg/astutil"
 )
 
+type GimpsString string
+
+type importMetadata struct {
+	Doc     *ast.CommentGroup
+	Comment *ast.CommentGroup
+	Alias   string
+	Package string
+}
+
+func (m *importMetadata) Statement() string {
+	statement := fmt.Sprintf(`"%s"`, m.Package)
+	if m.Alias != "" {
+		statement = fmt.Sprintf("%s %s", m.Alias, statement)
+	}
+
+	return statement
+}
+
+type importPosition struct {
+	Start token.Pos
+	End   token.Pos
+}
+
+func (p *importPosition) IsInRange(comment *ast.CommentGroup) bool {
+	if p.Start <= comment.Pos() && comment.Pos() <= p.End {
+		return true
+	}
+
+	return false
+}
+
 // Execute is for revise imports and format the code
-func Execute(config *Config, filePath string) ([]byte, bool, error) {
+func Execute(config *Config, filePath string, aliaser *Aliaser) ([]byte, bool, error) {
 	setDefaults(config)
 
 	originalContent, err := ioutil.ReadFile(filePath)
@@ -27,75 +55,89 @@ func Execute(config *Config, filePath string) ([]byte, bool, error) {
 
 	fset := token.NewFileSet()
 
-	pf, err := parser.ParseFile(fset, "", originalContent, parser.ParseComments)
+	file, err := parser.ParseFile(fset, "", originalContent, parser.ParseComments)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("failed to parse file: %v", err)
 	}
 
-	importsWithMetadata, err := parseImports(config, pf, filePath)
+	// determine the imports used in the file
+	imports, err := parseImports(file, filePath)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("failed to parse imports: %v", err)
 	}
 
-	importSets := groupImports(
-		config,
-		importsWithMetadata,
-	)
-
-	if decls, hadMultipleDecls := mergeMultipleImportDecls(pf); hadMultipleDecls {
-		pf.Decls = decls
+	// re-calculate aliases early, but only spend the effort if some rules
+	// are configured
+	if aliaser != nil {
+		err = aliaser.RewriteFile(file, filePath, imports)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to rewrite import aliases: %v", err)
+		}
 	}
 
-	fixImports(pf, importSets, importsWithMetadata)
-	formatDecls(config, pf)
+	// apply classification rules to group the imports into sets
+	importSets := groupImports(config, imports)
 
-	fixedImportsContent, err := generateFile(fset, pf)
+	// merge import statements into a single one
+	combineImportDecls(file)
+
+	// rebuild/regroup imported packages
+	fixImports(file, importSets, imports)
+
+	// in case the source file actually had a single empty import statement
+	removeEmptyImportNode(file)
+
+	fixedImportsContent, err := generateFile(fset, file)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("failed to generate code: %v", err)
 	}
 
 	formattedContent, err := format.Source(fixedImportsContent)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("failed to format code: %v", err)
 	}
 
 	return formattedContent, !bytes.Equal(originalContent, formattedContent), nil
 }
 
-func formatDecls(config *Config, f *ast.File) {
-	for _, decl := range f.Decls {
-		if dd, ok := decl.(*ast.FuncDecl); ok {
-			var formattedComments []*ast.Comment
-			if dd.Doc != nil {
-				formattedComments = make([]*ast.Comment, len(dd.Doc.List))
+func parseImports(file *ast.File, filePath string) (map[string]*importMetadata, error) {
+	metadata := map[string]*importMetadata{}
+
+	for _, importDecl := range getImportDecls(file) {
+		for _, spec := range importDecl.Specs {
+			importSpec := spec.(*ast.ImportSpec)
+			key := importSpec.Path.Value
+			pkg := strings.Trim(key, `"`)
+			alias := ""
+
+			// prepend alias if set
+			if importSpec.Name != nil {
+				alias = importSpec.Name.String()
+				key = fmt.Sprintf("%s %s", alias, importSpec.Path.Value)
 			}
 
-			formattedDoc := &ast.CommentGroup{
-				List: formattedComments,
+			// key is a quoted string, like `"fmt"` or `yaml "gopkg.in/yaml.v3"`
+			metadata[key] = &importMetadata{
+				Doc:     importSpec.Doc,
+				Comment: importSpec.Comment,
+				Package: pkg,
+				Alias:   alias,
 			}
-
-			if dd.Doc != nil {
-				for i, comment := range dd.Doc.List {
-					formattedDoc.List[i] = comment
-				}
-			}
-
-			dd.Doc = formattedDoc
 		}
 	}
+
+	return metadata, nil
 }
 
 // groupImports takes all the imports of a file and matches them against
 // the configured classification rules. It then returns a list of import
 // sets.
-func groupImports(
-	config *Config,
-	importsWithMetadata map[string]*commentsMetadata,
-) []importSet {
+func groupImports(config *Config, imports map[string]*importMetadata) []importSet {
 	sets := map[string]importSet{}
+	classifier := NewClassifier(config.ProjectName, config.Sets)
 
-	for imprt := range importsWithMetadata {
-		setName := config.classifyImport(imprt)
+	for imprt, metadata := range imports {
+		setName := classifier.ClassifyImport(metadata.Package)
 
 		if _, ok := sets[setName]; !ok {
 			sets[setName] = importSet{}
@@ -115,47 +157,7 @@ func groupImports(
 	return result
 }
 
-func generateFile(fset *token.FileSet, f *ast.File) ([]byte, error) {
-	var output []byte
-	buffer := bytes.NewBuffer(output)
-	if err := printer.Fprint(buffer, fset, f); err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func fixImports(
-	f *ast.File,
-	importSets []importSet,
-	commentsMetadata map[string]*commentsMetadata,
-) {
-	var importsPositions []*importPosition
-	for _, decl := range f.Decls {
-		dd, ok := decl.(*ast.GenDecl)
-		if !ok {
-			continue
-		}
-
-		if dd.Tok != token.IMPORT {
-			continue
-		}
-
-		importsPositions = append(
-			importsPositions, &importPosition{
-				Start: dd.Pos(),
-				End:   dd.End(),
-			},
-		)
-
-		dd.Specs = rebuildImports(dd.Tok, commentsMetadata, importSets)
-	}
-
-	clearImportDocs(f, importsPositions)
-	removeEmptyImportNode(f)
-}
-
-// mergeMultipleImportDecls will return combined import declarations to single declaration
+// combineImportDecls will return combined import declarations to single declaration
 //
 // Ex.:
 // import "fmt"
@@ -167,82 +169,68 @@ func fixImports(
 // 	"fmt"
 //	"io"
 // )
-func mergeMultipleImportDecls(f *ast.File) ([]ast.Decl, bool) {
-	importSpecs := make([]ast.Spec, 0, len(f.Imports))
-	for _, importSpec := range f.Imports {
-		importSpecs = append(importSpecs, importSpec)
+func combineImportDecls(file *ast.File) []ast.Decl {
+	// convert _all_ imports into a set of ast.Spec
+	importSpecs := make([]ast.Spec, len(file.Imports))
+	for i, importSpec := range file.Imports {
+		importSpecs[i] = importSpec
 	}
 
-	var (
-		mergedMultipleImportDecls bool
-		isFirstImportDeclDefined  bool
-	)
+	var combinedImportDecl *ast.GenDecl
 
-	decls := make([]ast.Decl, 0, len(f.Decls))
-	for _, decl := range f.Decls {
-		dd, ok := decl.(*ast.GenDecl)
-		if !ok {
+	// walk through all declarations
+	decls := make([]ast.Decl, 0, len(file.Decls))
+	for _, decl := range file.Decls {
+		// keep non-generic / non-import declarations as-is
+		genericDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genericDecl.Tok != token.IMPORT {
 			decls = append(decls, decl)
 			continue
 		}
 
-		if dd.Tok != token.IMPORT {
-			decls = append(decls, dd)
+		// we already have an import statement, add the current
+		// one to it
+		if combinedImportDecl != nil {
+			combinedImportDecl.Rparen = genericDecl.End()
 			continue
 		}
 
-		if isFirstImportDeclDefined {
-			mergedMultipleImportDecls = true
-			storedGenDecl := decls[len(decls)-1].(*ast.GenDecl)
-			if storedGenDecl.Tok == token.IMPORT {
-				storedGenDecl.Rparen = dd.End()
-			}
-			continue
-		}
-
-		dd.Specs = importSpecs
-		decls = append(decls, dd)
-		isFirstImportDeclDefined = true
+		// we found the first import statement
+		combinedImportDecl = genericDecl
+		combinedImportDecl.Specs = importSpecs
+		decls = append(decls, combinedImportDecl)
 	}
 
-	return decls, mergedMultipleImportDecls
+	// update file
+	file.Decls = decls
+
+	return decls
 }
 
-func removeEmptyImportNode(f *ast.File) {
-	var (
-		decls      []ast.Decl
-		hasImports bool
-	)
+// fixImports rebuilds the import statement and fixes the associated comments.
+func fixImports(file *ast.File, importSets []importSet, imports map[string]*importMetadata) {
+	var importPositions []*importPosition
 
-	for _, decl := range f.Decls {
-		dd, ok := decl.(*ast.GenDecl)
-		if !ok {
-			decls = append(decls, decl)
+	// there should only ever be a single import statement at this point,
+	// because we combined them earlier
+	for _, importDecl := range getImportDecls(file) {
+		importPositions = append(
+			importPositions, &importPosition{
+				Start: importDecl.Pos(),
+				End:   importDecl.End(),
+			},
+		)
 
-			continue
-		}
-
-		if dd.Tok == token.IMPORT && len(dd.Specs) > 0 {
-			hasImports = true
-
-			break
-		}
-
-		if dd.Tok != token.IMPORT {
-			decls = append(decls, decl)
-		}
+		importDecl.Specs = rebuildImports(importDecl.Tok, imports, importSets)
 	}
 
-	if !hasImports {
-		f.Decls = decls
-	}
+	clearImportDocs(file, importPositions)
 }
 
-func rebuildImports(
-	tok token.Token,
-	commentsMetadata map[string]*commentsMetadata,
-	importSets []importSet,
-) []ast.Spec {
+// rebuildImports takes the already grouped importSets plus the metadata and
+// generates a list of ast.Spec statements, representing the contents (Specs)
+// of the file's new import statement.
+func rebuildImports(tok token.Token, imports map[string]*importMetadata, importSets []importSet) []ast.Spec {
 	// convert each set into a list of ImportSpec declarations
 	importSpecSets := [][]ast.Spec{}
 	for _, set := range importSets {
@@ -250,7 +238,7 @@ func rebuildImports(
 
 		for _, imprt := range set {
 			importSpecs = append(importSpecs, &ast.ImportSpec{
-				Path: &ast.BasicLit{Value: importWithComment(imprt, commentsMetadata), Kind: tok},
+				Path: &ast.BasicLit{Value: importWithComment(imprt, imports), Kind: tok},
 			})
 		}
 
@@ -270,11 +258,12 @@ func rebuildImports(
 	return specs
 }
 
-func clearImportDocs(f *ast.File, importsPositions []*importPosition) {
-	importsComments := make([]*ast.CommentGroup, 0, len(f.Comments))
+// ???
+func clearImportDocs(file *ast.File, importPositions []*importPosition) {
+	importsComments := make([]*ast.CommentGroup, 0, len(file.Comments))
 
-	for _, comment := range f.Comments {
-		for _, importPosition := range importsPositions {
+	for _, comment := range file.Comments {
+		for _, importPosition := range importPositions {
 			if importPosition.IsInRange(comment) {
 				continue
 			}
@@ -282,103 +271,72 @@ func clearImportDocs(f *ast.File, importsPositions []*importPosition) {
 		}
 	}
 
-	if len(f.Imports) > 0 {
-		f.Comments = importsComments
+	if len(file.Imports) > 0 {
+		file.Comments = importsComments
 	}
 }
 
-func importWithComment(imprt string, commentsMetadata map[string]*commentsMetadata) string {
+// removeEmptyImportNode removes a single empty import node. This
+// occurs if the original input file already had no imports, but
+// a "import ()" statement. This function relies on all imports
+// already being combined into a single statement.
+func removeEmptyImportNode(file *ast.File) {
+	var decls []ast.Decl
+
+	for _, decl := range file.Decls {
+		// collect all non-generic and non-import declarations
+		genericDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genericDecl.Tok != token.IMPORT {
+			decls = append(decls, decl)
+			continue
+		}
+
+		// the import declaration is not empty, nothing to do
+		if len(genericDecl.Specs) > 0 {
+			return // exit early
+		}
+	}
+
+	// there was no non-empty import statement, but possibly
+	// an empty one; the empty one is not part of `decls` and
+	// so we now override the file's content
+	file.Decls = decls
+}
+
+// importWithComment appends a possible comment to the import statement,
+// i.e. turning `foo "gopkg.in/foo/v2"` into `foo "gopkg.in/foo/v2" // my comment`
+func importWithComment(imprt string, imports map[string]*importMetadata) string {
 	var comment string
-	commentGroup, ok := commentsMetadata[imprt]
-	if ok {
-		if commentGroup != nil && commentGroup.Comment != nil && len(commentGroup.Comment.List) > 0 {
-			comment = fmt.Sprintf("// %s", strings.ReplaceAll(commentGroup.Comment.Text(), "\n", ""))
+	if metadata, ok := imports[imprt]; ok && metadata.Comment != nil && len(metadata.Comment.List) > 0 {
+		// TODO: use TrimSpace() ? Can this be a multiline comment?
+		comment = fmt.Sprintf("// %s", strings.ReplaceAll(metadata.Comment.Text(), "\n", ""))
+	}
+
+	return strings.TrimSpace(fmt.Sprintf("%s %s", imprt, comment))
+}
+
+// generateFile creates Go source code for the given token set and file.
+func generateFile(fset *token.FileSet, file *ast.File) ([]byte, error) {
+	var output []byte
+	buffer := bytes.NewBuffer(output)
+	if err := printer.Fprint(buffer, fset, file); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+// getImportDecls returns all generic declarations with Tok==token.IMPORT
+func getImportDecls(file *ast.File) []*ast.GenDecl {
+	var result []*ast.GenDecl
+	for _, decl := range file.Decls {
+		genericDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genericDecl.Tok != token.IMPORT {
+			continue
 		}
+
+		result = append(result, genericDecl)
 	}
 
-	return fmt.Sprintf("%s %s", imprt, comment)
-}
-
-func parseImports(config *Config, f *ast.File, filePath string) (map[string]*commentsMetadata, error) {
-	importsWithMetadata := map[string]*commentsMetadata{}
-
-	var packageImports map[string]string
-	var err error
-
-	if *config.RemoveUnusedImports || *config.SetVersionAlias {
-		packageImports, err = astutil.LoadPackageDependencies(path.Dir(filePath), astutil.ParseBuildTag(f))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, decl := range f.Decls {
-		switch decl.(type) {
-		case *ast.GenDecl:
-			dd := decl.(*ast.GenDecl)
-			if dd.Tok == token.IMPORT {
-				for _, spec := range dd.Specs {
-					var importSpecStr string
-					importSpec := spec.(*ast.ImportSpec)
-
-					if *config.RemoveUnusedImports && !astutil.UsesImport(
-						f, packageImports, strings.Trim(importSpec.Path.Value, `"`),
-					) {
-						continue
-					}
-
-					if importSpec.Name != nil {
-						importSpecStr = strings.Join([]string{importSpec.Name.String(), importSpec.Path.Value}, " ")
-					} else {
-						if *config.SetVersionAlias {
-							importSpecStr = setAliasForVersionedImportSpec(importSpec, packageImports)
-						} else {
-							importSpecStr = importSpec.Path.Value
-						}
-					}
-
-					importsWithMetadata[importSpecStr] = &commentsMetadata{
-						Doc:     importSpec.Doc,
-						Comment: importSpec.Comment,
-					}
-				}
-			}
-		}
-	}
-
-	return importsWithMetadata, nil
-}
-
-func setAliasForVersionedImportSpec(importSpec *ast.ImportSpec, packageImports map[string]string) string {
-	var importSpecStr string
-
-	imprt := strings.Trim(importSpec.Path.Value, `"`)
-	aliasName := packageImports[imprt]
-
-	importSuffix := path.Base(imprt)
-	if importSuffix != aliasName {
-		importSpecStr = fmt.Sprintf("%s %s", aliasName, importSpec.Path.Value)
-	} else {
-		importSpecStr = importSpec.Path.Value
-	}
-
-	return importSpecStr
-}
-
-type commentsMetadata struct {
-	Doc     *ast.CommentGroup
-	Comment *ast.CommentGroup
-}
-
-type importPosition struct {
-	Start token.Pos
-	End   token.Pos
-}
-
-func (p *importPosition) IsInRange(comment *ast.CommentGroup) bool {
-	if p.Start <= comment.Pos() && comment.Pos() <= p.End {
-		return true
-	}
-
-	return false
+	return result
 }

@@ -1,0 +1,13 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"go.xrstf.de/gimps/pkg/gimps"
+)
+
+func main() {
+	fmt.Println(gimps.Config{})
+	log.Println("foo")
+}

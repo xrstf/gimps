@@ -1,0 +1,4 @@
+aliasRules:
+  - name: test
+    expr: 'k8s.io/api/([a-z0-9-]+)/(v[a-z0-9-]+)'
+    alias: '$1$2'

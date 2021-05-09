@@ -39,10 +39,12 @@ func main() {
 	dryRun := false
 	showVersion := false
 	stdout := false
+	verbose := false
 
 	flag.StringVar(&configFile, "config", configFile, "Path to the config file (mandatory).")
 	flag.BoolVar(&stdout, "stdout", showVersion, "Print output to stdout instead of updating the source file(s).")
 	flag.BoolVar(&dryRun, "dry-run", dryRun, "Do not update files.")
+	flag.BoolVar(&verbose, "verbose", verbose, "List all instead of just changed files.")
 	flag.BoolVar(&showVersion, "version", stdout, "Show version and exit.")
 	flag.Parse()
 
@@ -82,6 +84,11 @@ func main() {
 		config.ProjectName = modName
 	}
 
+	aliaser, err := gimps.NewAliaser(config.ProjectName, config.AliasRules)
+	if err != nil {
+		log.Fatalf("Failed to initialize aliaser: %v", err)
+	}
+
 	for _, input := range inputs {
 		filenames, err := listFiles(input, modRoot, config.Exclude)
 		if err != nil {
@@ -100,7 +107,16 @@ func main() {
 				}
 			}
 
-			formattedOutput, hasChange, err := gimps.Execute(&config.Config, filename)
+			relPath, err := filepath.Rel(modRoot, filename)
+			if err != nil {
+				log.Fatalf("This should never happen, could not determine relative path: %v", err)
+			}
+
+			if verbose {
+				log.Printf("> %s", relPath)
+			}
+
+			formattedOutput, hasChange, err := gimps.Execute(&config.Config, filename, aliaser)
 			if err != nil {
 				log.Fatalf("Failed to process %q: %v", filename, err)
 			}
@@ -108,12 +124,11 @@ func main() {
 			if stdout {
 				fmt.Print(string(formattedOutput))
 			} else if hasChange {
-				relPath, err := filepath.Rel(modRoot, filename)
-				if err != nil {
-					log.Fatalf("This should never happen, could not determine relative path: %v", err)
+				if verbose {
+					log.Printf("! %s", relPath)
+				} else {
+					log.Printf("Fixed %s", relPath)
 				}
-
-				log.Printf("Fixing %s", relPath)
 
 				if !dryRun {
 					if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {

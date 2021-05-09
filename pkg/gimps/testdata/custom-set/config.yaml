@@ -1,0 +1,6 @@
+projectName: go.xrstf.de/gimps/test
+importOrder: [std, test, project, external]
+sets:
+  - name: test
+    patterns:
+      - 'k8s.io/**'

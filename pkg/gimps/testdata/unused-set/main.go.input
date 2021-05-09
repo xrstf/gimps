@@ -1,0 +1,16 @@
+package main
+
+import (
+	"fmt"
+	"go.xrstf.de/gimps"
+	"go.xrstf.de/gimps/test"
+	"go.xrstf.de/gimps/test/subpkg"
+	"log"
+)
+
+func main() {
+	fmt.Println(gimps.Config{})
+	fmt.Println(test.Config{})
+	fmt.Println(subpkg.Config{})
+	log.Println("foo")
+}

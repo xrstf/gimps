@@ -1,0 +1,11 @@
+package main
+
+import (
+	a "fmt"
+	b "log"
+)
+
+func main() {
+	a.Println("")
+	b.Println("")
+}

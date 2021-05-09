@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -11,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	doublestar "github.com/bmatcuk/doublestar/v4"
+	doublestarx "github.com/bmatcuk/doublestar/v4"
 )
 
 // listFiles takes a filename or directory as its start argument and returns
@@ -24,7 +25,7 @@ func listFiles(start string, moduleRoot string, skips []string) ([]string, error
 
 	info, err := os.Stat(start)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid file: %v", err)
 	}
 
 	if !info.IsDir() {
@@ -34,7 +35,7 @@ func listFiles(start string, moduleRoot string, skips []string) ([]string, error
 	err = filepath.WalkDir(start, func(path string, d fs.DirEntry, err error) error {
 		relPath, err := filepath.Rel(moduleRoot, path)
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid file: %v", err)
 		}
 
 		if isSkipped(relPath, skips) {
@@ -60,7 +61,7 @@ func listFiles(start string, moduleRoot string, skips []string) ([]string, error
 
 func isSkipped(relPath string, skips []string) bool {
 	for _, skip := range skips {
-		if match, _ := doublestar.Match(skip, relPath); match {
+		if match, _ := doublestarx.Match(skip, relPath); match {
 			return true
 		}
 	}
@@ -98,7 +99,7 @@ var (
 func isGeneratedFile(filename string) (bool, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to read file: %v", err)
 	}
 
 	return isGeneratedCode(content)
@@ -109,7 +110,7 @@ func isGeneratedCode(sourceCode []byte) (bool, error) {
 
 	file, err := parser.ParseFile(fset, "", sourceCode, parser.ParseComments)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to parse code: %v", err)
 	}
 
 	// go through all comments until we reach the package declaration

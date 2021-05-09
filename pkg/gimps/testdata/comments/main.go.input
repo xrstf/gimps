@@ -1,0 +1,14 @@
+package main
+
+import (
+	"log"
+)
+
+import (
+	"fmt" // required!
+)
+
+func main() {
+	fmt.Println("hello world")
+	log.Println("foo")
+}

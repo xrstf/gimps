@@ -1,0 +1,18 @@
+package main
+
+import (
+	"fmt"
+	"go.xrstf.de/gimps"
+	"go.xrstf.de/gimps/test"
+	"go.xrstf.de/gimps/test/subpkg"
+	"k8s.io/apis/core/v1"
+	"log"
+)
+
+func main() {
+	fmt.Println(v1.Config{})
+	fmt.Println(gimps.Config{})
+	fmt.Println(test.Config{})
+	fmt.Println(subpkg.Config{})
+	log.Println("foo")
+}

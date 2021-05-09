@@ -1,0 +1,7 @@
+aliasRules:
+  - name: a-to-b
+    expr: 'fmt'
+    alias: 'b'
+  - name: b-to-a
+    expr: 'log'
+    alias: 'a'

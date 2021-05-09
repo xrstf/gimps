@@ -1,0 +1,5 @@
+aliasRules:
+  - name: fmt-to-log
+    expr: 'fmt'
+    alias: 'log'
+expectedExecuteError: 'failed to rewrite import aliases: two or more packages (at least "fmt" and "log") would be aliased to "log"'
