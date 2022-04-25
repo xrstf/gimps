@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -17,20 +18,17 @@ import (
 
 // Project build specific vars
 var (
-	Tag       string
-	Commit    string
-	SourceURL string
-	GoVersion string
+	Tag    string
+	Commit string
 )
 
 func printVersion() {
 	fmt.Printf(
-		"version: %s\nbuild with: %s\ntag: %s\ncommit: %s\nsource: %s\n",
+		"version: %s\nbuilt with: %s\ntag: %s\ncommit: %s\n",
 		strings.TrimPrefix(Tag, "v"),
-		GoVersion,
+		runtime.Version(),
 		Tag,
 		Commit,
-		SourceURL,
 	)
 }
 

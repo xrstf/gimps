@@ -1,52 +1,31 @@
-env:
-  - GO111MODULE=on
-  - CGO_ENABLED=0
-  - PROJECT_NAME=gimps
-  - PROJECT_USER=xrstf
-
 builds:
-  - id: gimps-amd64
-    binary: gimps
-    goos:
-      - linux
-    goarch:
-      - amd64
+  - env:
+      # goreleaser does not work with CGO, it could also complicate
+      # usage by users in CI/CD systems like Terraform Cloud where
+      # they are unable to install libraries.
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
     ldflags:
-      - -s -w -X "main.Tag={{ .Tag }}" -X "main.Commit={{ .FullCommit }}" -X "main.SourceURL={{ .GitURL }}" -X "main.GoVersion={{ .Env.GO_VERSION }}"
-
-  - id: gimps-darwin-amd64
-    binary: gimps
+      - '-s -w -X main.Tag={{.Version}} -X main.Commit={{.Commit}}'
     goos:
+      - freebsd
+      - windows
+      - linux
       - darwin
     goarch:
       - amd64
-    ldflags:
-      - -s -w -X "main.Tag={{ .Tag }}" -X "main.Commit={{ .FullCommit }}" -X "main.SourceURL={{ .GitURL }}" -X "main.GoVersion={{ .Env.GO_VERSION }}"
-
-  - id: gimps-windows-amd64
-    binary: gimps
-    goos:
-      - windows
-    goarch:
-      - amd64
-    ldflags:
-      - -s -w -X "main.Tag={{ .Tag }}" -X "main.Commit={{ .FullCommit }}" -X "main.SourceURL={{ .GitURL }}" -X "main.GoVersion={{ .Env.GO_VERSION }}"
-
+      - '386'
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+    binary: '{{ .ProjectName }}'
+archives:
+  - format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 checksum:
-  name_template: "checksums.txt"
-
-snapshot:
-  name_template: "{{ .Tag }}-next"
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-
-release:
-  prerelease: auto
-  github:
-    owner: xrstf
-    name: gimps
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
