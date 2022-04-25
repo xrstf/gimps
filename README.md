@@ -55,8 +55,10 @@ the `vendor` folder and generated files.
 ## Installation
 
 ```
-go get go.xrstf.de/gimps
+go install go.xrstf.de/gimps
 ```
+
+Alternatively, you can download the [latest release](https://github.com/xrstf/gimps/releases/latest) from GitHub.
 
 ## Configuration
 
