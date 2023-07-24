@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Christoph Mewes
+// SPDX-License-Identifier: MIT
+
 package gimps
 
 type Config struct {
