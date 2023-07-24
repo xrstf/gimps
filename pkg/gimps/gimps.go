@@ -160,15 +160,16 @@ func groupImports(config *Config, imports map[string]*importMetadata) []importSe
 // combineImportDecls will return combined import declarations to single declaration
 //
 // Ex.:
-// import "fmt"
-// import "io"
-// -----
+//
+//	import "fmt"
+//	import "io"
+//
 // to
-// -----
-// import (
-// 	"fmt"
-//	"io"
-// )
+//
+//	    import (
+//		        "fmt"
+//		        "io"
+//	    )
 func combineImportDecls(file *ast.File) []ast.Decl {
 	// convert _all_ imports into a set of ast.Spec
 	importSpecs := make([]ast.Spec, len(file.Imports))
