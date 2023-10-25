@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.6.0
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/incu6us/goimports-reviser/v3 v3.5.6
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
