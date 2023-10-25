@@ -4,7 +4,6 @@
 package gimps
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,7 +55,7 @@ func TestExecute(t *testing.T) {
 			}
 
 			expectedFile := filepath.Join(testcase, "main.go.expected")
-			expected, err := ioutil.ReadFile(expectedFile)
+			expected, err := os.ReadFile(expectedFile)
 			require.Nil(t, err)
 			assert.Equal(t, string(expected), string(output))
 		})

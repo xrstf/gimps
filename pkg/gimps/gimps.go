@@ -11,7 +11,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 )
@@ -51,7 +51,7 @@ func (p *importPosition) IsInRange(comment *ast.CommentGroup) bool {
 func Execute(config *Config, filePath string, aliaser *Aliaser) ([]byte, bool, error) {
 	setDefaults(config)
 
-	originalContent, err := ioutil.ReadFile(filePath)
+	originalContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, false, err
 	}

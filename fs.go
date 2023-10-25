@@ -9,7 +9,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -100,7 +99,7 @@ var (
 )
 
 func isGeneratedFile(filename string) (bool, error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return false, fmt.Errorf("failed to read file: %v", err)
 	}

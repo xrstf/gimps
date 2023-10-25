@@ -6,7 +6,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -132,7 +131,7 @@ func main() {
 				}
 
 				if !dryRun {
-					if err := ioutil.WriteFile(filename, formattedOutput, 0644); err != nil {
+					if err := os.WriteFile(filename, formattedOutput, 0644); err != nil {
 						log.Fatalf("Failed to write fixed result to file %q: %v", filename, err)
 					}
 				}
