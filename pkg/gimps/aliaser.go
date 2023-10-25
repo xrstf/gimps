@@ -8,7 +8,7 @@ import (
 	"go/ast"
 	"regexp"
 
-	"github.com/incu6us/goimports-reviser/v2/pkg/astutil"
+	"github.com/incu6us/goimports-reviser/v3/pkg/astutil"
 )
 
 type Aliaser struct {

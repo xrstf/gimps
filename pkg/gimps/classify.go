@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
-	"github.com/incu6us/goimports-reviser/v2/pkg/std"
+	"github.com/incu6us/goimports-reviser/v3/pkg/std"
 )
 
 type importSet []string

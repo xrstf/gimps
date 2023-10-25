@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/incu6us/goimports-reviser/v2/pkg/module"
+	"github.com/incu6us/goimports-reviser/v3/pkg/module"
 
 	"go.xrstf.de/gimps/pkg/gimps"
 )
