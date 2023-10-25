@@ -1,0 +1,4 @@
+# This testcase reproduces
+# https://github.com/xrstf/gimps/issues/1
+
+projectName: go.xrstf.de/gimps/test

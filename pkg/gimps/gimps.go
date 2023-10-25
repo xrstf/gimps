@@ -312,8 +312,15 @@ func removeEmptyImportNode(file *ast.File) {
 func importWithComment(imprt string, imports map[string]*importMetadata) string {
 	var comment string
 	if metadata, ok := imports[imprt]; ok && metadata.Comment != nil && len(metadata.Comment.List) > 0 {
+		// comments can be normal comments ("// foo bar") or special comments like "//foo bar";
+		// special comments will return an empty string if Text() is called.
 		// TODO: use TrimSpace() ? Can this be a multiline comment?
-		comment = fmt.Sprintf("// %s", strings.ReplaceAll(metadata.Comment.Text(), "\n", ""))
+		formatted := strings.ReplaceAll(metadata.Comment.Text(), "\n", "")
+		if len(formatted) == 0 {
+			comment = metadata.Comment.List[0].Text
+		} else {
+			comment = fmt.Sprintf("// %s", formatted)
+		}
 	}
 
 	return strings.TrimSpace(fmt.Sprintf("%s %s", imprt, comment))
