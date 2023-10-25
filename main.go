@@ -54,7 +54,7 @@ func main() {
 	}
 
 	if pflag.NArg() == 0 {
-		log.Fatal("Usage: gimps [-stdout] [-dry-run] [-config=(autodetect)] FILE_OR_DIRECTORY[, ...]")
+		log.Fatal("Usage: gimps [--stdout] [--dry-run] [--config=(autodetect)] FILE_OR_DIRECTORY[, ...]")
 	}
 
 	inputs, err := cleanupArgs(pflag.Args())
