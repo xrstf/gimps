@@ -35,6 +35,10 @@ func listFiles(start string, moduleRoot string, skips []string) ([]string, error
 	}
 
 	err = filepath.WalkDir(start, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		relPath, err := filepath.Rel(moduleRoot, path)
 		if err != nil {
 			return fmt.Errorf("invalid file: %v", err)

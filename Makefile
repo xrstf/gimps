@@ -1,20 +1,32 @@
-export GO_VERSION=$(go version | awk '{print $3;}')
+# SPDX-FileCopyrightText: 2023 Christoph Mewes
+# SPDX-License-Identifier: MIT
 
-.PHONY: go-test
-go-test:
-	@go test -race -v -cover ./...
+GIT_VERSION = $(shell git describe --tags --always)
+GIT_HEAD ?= $(shell git log -1 --format=%H)
+NOW_GO_RFC339 = $(shell date --utc +'%Y-%m-%dT%H:%M:%SZ')
 
-# Release
-.PHONY: release
-release:
-	@goreleaser --rm-dist
+export CGO_ENABLED ?= 0
+export GOFLAGS ?= -mod=readonly -trimpath
+OUTPUT_DIR ?= _build
+GO_DEFINES ?= -X main.BuildTag=$(GIT_VERSION) -X main.BuildCommit=$(GIT_HEAD) -X main.BuildDate=$(NOW_GO_RFC339)
+GO_LDFLAGS += -w -extldflags '-static' $(GO_DEFINES)
+GO_BUILD_FLAGS ?= -v -ldflags '$(GO_LDFLAGS)'
+GO_TEST_FLAGS ?= -v -race
 
-# Create dist only locally
-.PHONY: release-check
-release-check:
-	@goreleaser --snapshot --skip-publish --rm-dist
+default: build
 
-# Run without without publishing
-.PHONY: release-dry-run
-release-dry-run:
-	@goreleaser release --skip-publish --rm-dist
+.PHONY: build
+build:
+	go build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/ .
+
+.PHONY: test
+test:
+	CGO_ENABLED=1 go test $(GO_TEST_FLAGS) ./...
+
+.PHONY: clean
+clean:
+	rm -rf $(OUTPUT_DIR)
+
+.PHONY: lint
+lint:
+	golangci-lint run ./...
