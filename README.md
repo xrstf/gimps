@@ -6,7 +6,7 @@ set of classes, so that the order can be configured much more fine-grained.
 
 ## Example
 
-In [Kubermatic](https://kubermatic.com/) imports are grouped in 4 groups:
+At [Kubermatic](https://kubermatic.com/) imports are grouped in 4 groups:
 
 - standard library
 - external packages that are not in the following two groups
@@ -54,7 +54,7 @@ the `vendor` folder and generated files.
 
 ## Installation
 
-```
+```bash
 go install go.xrstf.de/gimps
 ```
 
