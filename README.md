@@ -62,6 +62,15 @@ Alternatively, you can download the [latest release](https://github.com/xrstf/gi
 
 ## Configuration
 
+```
+Usage of gimps:
+  -c, --config string   Path to the config file (mandatory).
+  -d, --dry-run         Do not update files.
+  -s, --stdout          Print output to stdout instead of updating the source file(s).
+  -v, --verbose         List all instead of just changed files.
+  -V, --version         Show version and exit.
+```
+
 gimps uses a `.gimps.yaml` file that can either be given explicitly via `-config FILE.yaml` or
 it can be placed in the Go module root (where your `go.mod` lives) and must then be named
 `.gimps.yaml`.

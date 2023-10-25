@@ -4,33 +4,33 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
 
 	"github.com/incu6us/goimports-reviser/v3/pkg/module"
+	"github.com/spf13/pflag"
 
 	"go.xrstf.de/gimps/pkg/gimps"
 )
 
-// Project build specific vars
+// These variables get set by ldflags during compilation.
 var (
-	Tag    string
-	Commit string
+	BuildTag    string
+	BuildCommit string
+	BuildDate   string // RFC3339 format ("2006-01-02T15:04:05Z07:00")
 )
 
 func printVersion() {
 	fmt.Printf(
-		"version: %s\nbuilt with: %s\ntag: %s\ncommit: %s\n",
-		strings.TrimPrefix(Tag, "v"),
+		"gimps %s (%s), built with %s on %s\n",
+		BuildTag,
+		BuildCommit[:10],
 		runtime.Version(),
-		Tag,
-		Commit,
+		BuildDate,
 	)
 }
 
@@ -41,23 +41,23 @@ func main() {
 	stdout := false
 	verbose := false
 
-	flag.StringVar(&configFile, "config", configFile, "Path to the config file (mandatory).")
-	flag.BoolVar(&stdout, "stdout", showVersion, "Print output to stdout instead of updating the source file(s).")
-	flag.BoolVar(&dryRun, "dry-run", dryRun, "Do not update files.")
-	flag.BoolVar(&verbose, "verbose", verbose, "List all instead of just changed files.")
-	flag.BoolVar(&showVersion, "version", stdout, "Show version and exit.")
-	flag.Parse()
+	pflag.StringVarP(&configFile, "config", "c", configFile, "Path to the config file (mandatory).")
+	pflag.BoolVarP(&stdout, "stdout", "s", stdout, "Print output to stdout instead of updating the source file(s).")
+	pflag.BoolVarP(&dryRun, "dry-run", "d", dryRun, "Do not update files.")
+	pflag.BoolVarP(&verbose, "verbose", "v", verbose, "List all instead of just changed files.")
+	pflag.BoolVarP(&showVersion, "version", "V", showVersion, "Show version and exit.")
+	pflag.Parse()
 
 	if showVersion {
 		printVersion()
 		return
 	}
 
-	if flag.NArg() == 0 {
+	if pflag.NArg() == 0 {
 		log.Fatal("Usage: gimps [-stdout] [-dry-run] [-config=(autodetect)] FILE_OR_DIRECTORY[, ...]")
 	}
 
-	inputs, err := cleanupArgs(flag.Args())
+	inputs, err := cleanupArgs(pflag.Args())
 	if err != nil {
 		log.Fatalf("Invalid arguments: %v.", err)
 	}

@@ -1,4 +1,5 @@
 pkg/gimps/testdata/*.go
 pkg/gimps/testdata/pkg
-dist
 coverage.txt
+/dist
+/_build
