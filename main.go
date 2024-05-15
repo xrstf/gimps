@@ -25,13 +25,19 @@ var (
 )
 
 func printVersion() {
-	fmt.Printf(
-		"gimps %s (%s), built with %s on %s\n",
-		BuildTag,
-		BuildCommit[:10],
-		runtime.Version(),
-		BuildDate,
-	)
+	// handle empty values in case `go install` was used
+	if BuildCommit == "" {
+		fmt.Printf("gimps dev, built with %s\n",
+			runtime.Version(),
+		)
+	} else {
+		fmt.Printf("gimps %s (%s), built with %s on %s\n",
+			BuildTag,
+			BuildCommit[:10],
+			runtime.Version(),
+			BuildDate,
+		)
+	}
 }
 
 func main() {
