@@ -1,10 +1,17 @@
-# gimps, the Go IMPort Sorter
+# Migration note
+
+> [!IMPORTANT]
+> `gimps` has been migrated to [codeberg.org/xrstf/gimps](https://codeberg.org/xrstf/gimps).
+
+---
+
+## gimps, the Go IMPort Sorter
 
 This is a fork of [goimports-reviser](https://github.com/incu6us/goimports-reviser). The purpose of
 forking was to replace the fixed import classes ("std", "local", "project", ...) with a configurable
 set of classes, so that the order can be configured much more fine-grained.
 
-## Example
+### Example
 
 At [Kubermatic](https://kubermatic.com/) imports are grouped in 4 groups:
 
@@ -36,7 +43,7 @@ Note that `std` and `external` are pre-defined by gimps and cannot be configured
 Then running `gimps -config configfile.yaml .` will automatically fix all Go files, except for
 the `vendor` folder and generated files.
 
-## Changes in this Fork
+### Changes in this Fork
 
 - Output is always formatted, `-format` has been removed.
 - The notion of `local` packages with configurable prefixes has been removed,
@@ -52,15 +59,15 @@ the `vendor` folder and generated files.
 - gimps uses [goimports-reviser](https://github.com/incu6us/goimports-reviser)
   code for the AST parsing, but large chunks of the `reviser` package have been rewritten.
 
-## Installation
+### Installation
 
 ```bash
 go install go.xrstf.de/gimps
 ```
 
-Alternatively, you can download the [latest release](https://github.com/xrstf/gimps/releases/latest) from GitHub.
+Alternatively, you can download the [latest release](https://codeberg.org/xrstf/gimps/releases/latest) from Codeberg.
 
-## Configuration
+### Configuration
 
 ```
 Usage of gimps:
@@ -178,7 +185,7 @@ removeUnusedImports: false
 setVersionAlias: true
 ```
 
-## Running
+### Running
 
 Put the configuration either in a `.gimps.yaml` in the module root (recommended) or configure
 it explicitly via `-config`.
@@ -203,7 +210,7 @@ $ cd ~/myproject
 $ gimps .
 ```
 
-## License
+### License
 
 The original reviser code is MIT licensed and (c) 2020 Vyacheslav Pryimak.
 
